@@ -22,7 +22,7 @@ except ImportError:
     HAS_QUARTZ = False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE_DIR, "models/whisper-medium-8bit")
+MODEL = os.path.join(BASE_DIR, "models/whisper-turbo")
 HOTKEY = {keyboard.Key.alt, keyboard.Key.space}
 
 
@@ -51,8 +51,10 @@ class BoltApp(QApplication):
         # 2. База и Окна
         self.db = DB()
         self.overlay = CenterOverlay()
-        self.engine = BoltEngine(MODEL, self.signals.text_ready.emit, self.overlay.set_rms, self.signals.status_changed.emit)
         self.win = MainWindow(self.db, MODEL)
+        self.engine = BoltEngine(MODEL, self.signals.text_ready.emit, self.overlay.set_rms, self.signals.status_changed.emit)
+        
+        self.win.engine = self.engine
 
         self.signals.status_changed.connect(self.win.update_engine_status)
 

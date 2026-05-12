@@ -72,8 +72,50 @@ class DB:
         return self.conn.execute("SELECT text, dt, COALESCE(audio_len, 0), COALESCE(proc_len, 0) FROM history WHERE text LIKE ? ORDER BY id DESC", (q,)).fetchall()
     
     def get_models(self):
-        return [
-            {"id": "turbo", "name": "Whisper Turbo", "desc": "Баланс между скоростью и качеством.", "speed": 95, "acc": 85, "active": True},
-            {"id": "small", "name": "Whisper Small", "desc": "Максимальная скорость. Идеально для чипов M-серии.", "speed": 70, "acc": 75, "active": False},
-            {"id": "large", "name": "Whisper Large", "desc": "Максимальная точность, но ниже скорость.", "speed": 30, "acc": 98, "active": False},
+        base_path = os.path.expanduser("~/Library/Application Support/BoltAI/models")
+        models = [
+            {
+                "id": "turbo", 
+                "repo": "mlx-community/whisper-large-v3-turbo", 
+                "name": "Whisper Turbo", 
+                "category": "РЕКОМЕНДОВАНО",
+                "desc": "Лучший выбор. Почти мгновенная транскрибация с качеством флагманской модели.", 
+                "speed": 98, 
+                "acc": 95, 
+                "size": "1.6 GB"
+            },
+            {
+                "id": "large-v3", 
+                "repo": "mlx-community/whisper-large-v3-mlx", 
+                "name": "Whisper Large v3", 
+                "category": "PRO",
+                "desc": "Максимальная точность для профессионалов. Идеально для интервью и лекций.", 
+                "speed": 20, 
+                "acc": 99, 
+                "size": "3.1 GB"
+            },
+            {
+                "id": "distil-large-v3", 
+                "repo": "mlx-community/distil-whisper-large-v3-mlx", 
+                "name": "Whisper Distil", 
+                "category": "ЭФФЕКТИВНОСТЬ",
+                "desc": "Экстремально быстрая модель. Минимум нагрева и экономия заряда батареи.", 
+                "speed": 95, 
+                "acc": 91, 
+                "size": "750 MB"
+            },
+            {
+                "id": "base", 
+                "repo": "mlx-community/whisper-base-mlx", 
+                "name": "Whisper Base", 
+                "category": "ЛЕГКАЯ",
+                "desc": "Занимает минимум места. Подходит для простых заметок на любом устройстве.", 
+                "speed": 85, 
+                "acc": 75, 
+                "size": "480 MB"
+            }
         ]
+        for m in models:
+            m['path'] = os.path.join(base_path, m['id'])
+            m['downloaded'] = os.path.exists(m['path'])
+        return models

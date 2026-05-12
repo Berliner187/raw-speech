@@ -6,6 +6,7 @@ import mlx_whisper
 import os
 import gc
 import mlx.core as mx
+from huggingface_hub import snapshot_download
 
 
 class BoltEngine:
@@ -19,6 +20,32 @@ class BoltEngine:
         self.model_loaded = False
         self.fs = 16000
         self.is_loading = False
+    
+    def download_model(self, model_id, repo_id):
+        target_dir = os.path.expanduser(f"~/Library/Application Support/BoltAI/models/{model_id}")
+        
+        def _target():
+            def progress_callback(fraction):
+                self.callback_status("loading", int(fraction * 100))
+
+            try:
+                self.callback_status("loading", 10)
+                
+                snapshot_download(
+                    repo_id=repo_id,
+                    local_dir=target_dir,
+                    local_dir_use_symlinks=False
+                )
+                
+                self.model_path = target_dir
+                self.callback_status("ready", 100)
+                print(f"Модель {model_id} готова.")
+            except Exception as e:
+                self.callback_status("error", 0)
+                print(f"Download error: {e}")
+
+        threading.Thread(target=_target, daemon=True).start()
+
 
     def load_model(self, path=None):
         if self.is_loading: return

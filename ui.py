@@ -131,41 +131,82 @@ class NavButton(QPushButton):
 
 
 class ModelCard(QFrame):
-    def __init__(self, model_data):
+    def __init__(self, m_data, main_win):
         super().__init__()
-        self.setStyleSheet("background: white; border: 1px solid #E5E5E7; border-radius: 18px;")
+        self.m_data = m_data
+        self.main_win = main_win
+        self.setStyleSheet("QFrame { background: white; border: 1px solid #E5E5E7; border-radius: 18px; }")
+        
         l = QVBoxLayout(self)
         l.setContentsMargins(20, 20, 20, 20)
         
+        # Header: Имя и Вес
         h = QHBoxLayout()
-        name = QLabel(model_data['name'].upper())
-        name.setStyleSheet("font-weight: 900; font-size: 15px; border: none;")
-        status = QLabel("АКТИВНА" if model_data['active'] else "")
-        status.setStyleSheet("color: #34C759; font-weight: 800; font-size: 10px; border: none;")
-        h.addWidget(name); h.addStretch(); h.addWidget(status)
+        name_lbl = QLabel(self.m_data['name'])
+        name_lbl.setStyleSheet("font-weight: 900; font-size: 16px; color: #000; border: none; background: transparent;")
+        
+        size_lbl = QLabel(self.m_data['size'])
+        size_lbl.setStyleSheet("color: #8E8E93; font-size: 10px; font-weight: 700; border: none; background: transparent;")
+        
+        h.addWidget(name_lbl); h.addStretch(); h.addWidget(size_lbl)
         l.addLayout(h)
         
-        desc = QLabel(model_data['desc'])
+        desc = QLabel(self.m_data['desc'])
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #8E8E93; font-size: 12px; border: none; margin-top: 5px;")
+        desc.setStyleSheet("color: #8E8E93; font-size: 12px; border: none; background: transparent; margin-top: 5px;")
         l.addWidget(desc)
         
         l.addSpacing(10)
-        
-        # Прогресс-бары
-        l.addWidget(self.create_stat_bar("СКОРОСТЬ", model_data['speed']))
-        l.addWidget(self.create_stat_bar("ТОЧНОСТЬ", model_data['acc']))
-        
+        l.addWidget(self.create_stat_bar("СКОРОСТЬ", self.m_data['speed']))
+        l.addWidget(self.create_stat_bar("ТОЧНОСТЬ", self.m_data['acc']))
         l.addSpacing(10)
         
-        self.btn = QPushButton("ВЫБРАТЬ" if not model_data['active'] else "ИСПОЛЬЗУЕТСЯ")
-        self.btn.setEnabled(not model_data['active'])
+        self.btn = QPushButton()
         self.btn.setFixedHeight(35)
-        self.btn.setStyleSheet("""
-            QPushButton { background: #000; color: white; border-radius: 10px; font-weight: 800; font-size: 11px; }
-            QPushButton:disabled { background: #F2F2F7; color: #8E8E93; }
-        """)
+        self.btn.setCursor(Qt.PointingHandCursor)
+        self.btn.clicked.connect(self.on_btn_clicked)
+        self.update_btn_state()
         l.addWidget(self.btn)
+
+    def create_stat_bar(self, label, value):
+        w = QWidget()
+        wl = QVBoxLayout(w)
+        wl.setContentsMargins(0, 0, 0, 0); wl.setSpacing(4)
+        txt = QLabel(label)
+        txt.setStyleSheet("font-size: 9px; font-weight: 800; color: #8E8E93; border: none; background: transparent;")
+        bar = ProgressBar()
+        bar.setFixedHeight(6)
+        bar.set_value(value / 100.0)
+        wl.addWidget(txt); wl.addWidget(bar)
+        return w
+    
+    def update_btn_state(self):
+        # Проверяем, активна ли модель сейчас
+        is_active = (self.main_win.model_name == self.m_data['path'])
+        
+        if not self.m_data['downloaded']:
+            self.btn.setText(f"СКАЧАТЬ ({self.m_data['size']})")
+            self.btn.setEnabled(True)
+            self.btn.setStyleSheet("QPushButton { background: #007AFF; color: white; border-radius: 10px; font-weight: 800; border: none; }")
+        elif is_active and self.main_win.engine.model_loaded:
+            self.btn.setText("ИСПОЛЬЗУЕТСЯ")
+            self.btn.setEnabled(False)
+            self.btn.setStyleSheet("QPushButton { background: #F2F2F7; color: #8E8E93; border-radius: 10px; border: none; }")
+        else:
+            self.btn.setText("ВЫБРАТЬ")
+            self.btn.setEnabled(True)
+            self.btn.setStyleSheet("QPushButton { background: #000; color: white; border-radius: 10px; font-weight: 800; border: none; }")
+
+    def on_btn_clicked(self):
+        if not self.m_data['downloaded']:
+            self.main_win.engine.download_model(self.m_data['id'], self.m_data['repo'])
+            self.btn.setText("СКАЧИВАНИЕ...")
+            self.btn.setEnabled(False)
+        else:
+            self.main_win.engine.unload()
+            self.main_win.model_name = self.m_data['path']
+            self.main_win.engine.load_model(self.m_data['path'])
+            QTimer.singleShot(500, self.main_win.refresh_models)
 
     def create_stat_bar(self, label, value):
         w = QWidget()
@@ -245,8 +286,32 @@ class HistoryItem(QFrame):
         h.addWidget(self.del_btn)
         main_l.addLayout(h)
 
-        dur = QLabel(f"● {audio_len:.1f} сек"); dur.setStyleSheet("color: #007AFF; font-size: 10px; font-weight: 700; background: #E5F1FF; padding: 3px 10px; border-radius: 8px; border:none;")
-        main_l.addWidget(dur, alignment=Qt.AlignLeft)
+        meta_h = QHBoxLayout()
+        meta_h.setSpacing(6)
+
+        # 1. Длина аудио (Синий)
+        dur = QLabel(f"● {audio_len:.1f} сек")
+        dur.setStyleSheet("color: #007AFF; font-size: 10px; font-weight: 700; background: #E5F1FF; padding: 3px 10px; border-radius: 8px;")
+        
+        # 2. Стрелка
+        arrow = QLabel("→")
+        arrow.setStyleSheet("color: #8E8E93; font-size: 12px; font-weight: 400;")
+
+        # 3. Скорость обработки (Оранжевый)
+        proc = QLabel(f"{proc_len:.1f} сек")
+        proc.setStyleSheet("color: #FF9500; font-size: 10px; font-weight: 700; background: #FFF4E5; padding: 3px 10px; border-radius: 8px;")
+
+        # 4. Эффективность (Зеленый X)
+        x_factor = int(audio_len / proc_len) if proc_len > 0 else 0
+        eff = QLabel(f"x{x_factor}")
+        eff.setStyleSheet("color: #34C759; font-size: 10px; font-weight: 800; background: #E8F5E9; padding: 3px 8px; border-radius: 8px;")
+
+        meta_h.addWidget(dur)
+        meta_h.addWidget(arrow)
+        meta_h.addWidget(proc)
+        meta_h.addWidget(eff)
+        meta_h.addStretch()
+        main_l.addLayout(meta_h)
 
         self.content_lbl = QLabel(text)
         self.content_lbl.setWordWrap(True)
@@ -395,6 +460,16 @@ class MainWindow(QMainWindow):
         self.switch_page(0)
         self.refresh()
     
+    def refresh_models(self):
+        while self.models_grid.count():
+            item = self.models_grid.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        models = self.db.get_models()
+        for i, m_data in enumerate(models):
+            card = ModelCard(m_data, self)
+            self.models_grid.addWidget(card, i // 2, i % 2)
+    
     def update_engine_status(self, status, progress):
         if status == "loading":
             self.status_dot.setStyleSheet("color: #FF9500; font-size: 14px;")
@@ -405,6 +480,7 @@ class MainWindow(QMainWindow):
             self.status_dot.setStyleSheet("color: #34C759; font-size: 14px;")
             self.model_name_lbl.setText(self.model_name.split('/')[-1].upper())
             self.load_progress.hide()
+            self.refresh_models()
         elif status == "unloaded":
             self.status_dot.setStyleSheet("color: #FF3B30; font-size: 14px;")
             self.model_name_lbl.setText("ВЫКЛЮЧЕН")
@@ -503,15 +579,16 @@ class MainWindow(QMainWindow):
         title.setStyleSheet("font-weight: 800; font-size: 18px; color: #000; margin-bottom: 20px;")
         l.addWidget(title)
         
-        grid = QGridLayout()
-        grid.setSpacing(15)
+        self.models_grid_widget = QWidget()
+        self.models_grid = QGridLayout(self.models_grid_widget)
+        self.models_grid.setSpacing(15)
         
         models = self.db.get_models()
         for i, m_data in enumerate(models):
-            card = ModelCard(m_data)
-            grid.addWidget(card, i // 2, i % 2)
+            card = ModelCard(m_data, self)
+            self.models_grid.addWidget(card, i // 2, i % 2)
             
-        l.addLayout(grid)
+        l.addWidget(self.models_grid_widget)
         l.addStretch()
         return page
 
