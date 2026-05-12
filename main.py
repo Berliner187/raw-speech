@@ -2,6 +2,8 @@ import sys
 import os
 import time
 import pyperclip
+
+from PySide6.QtCore import Qt, QTimer, QEvent
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QObject, Signal
 from pynput import keyboard
@@ -25,12 +27,14 @@ HOTKEY = {keyboard.Key.alt, keyboard.Key.space}
 
 
 class AppSignals(QObject):
-    """ Мост для безопасной передачи команд 
+    """ 
+        Мост для безопасной передачи команд 
         из фоновых потоков (клавиатура, нейросеть) в Главный поток UI 
     """
     start_rec = Signal()
     stop_rec = Signal()
     text_ready = Signal(str, float, float)
+    status_changed = Signal(str, int)
 
 
 class BoltApp(QApplication):
@@ -38,28 +42,20 @@ class BoltApp(QApplication):
         super().__init__(argv)
         self.setQuitOnLastWindowClosed(False)
         
-        # 1. Инициализация системы сигналов
+        # 1. Сигналы
         self.signals = AppSignals()
         self.signals.start_rec.connect(self.ui_start_rec)
         self.signals.stop_rec.connect(self.ui_stop_rec)
         self.signals.text_ready.connect(self.ui_handle_text)
         
-        # 2. БД и Окна
+        # 2. База и Окна
         self.db = DB()
-        self.win = MainWindow(self.db, MODEL)
         self.overlay = CenterOverlay()
-        
-        # if self.db.is_first_launch(): # Реализуй проверку через COUNT(*) == 0
-        #     intro = Onboarding(self.win)
-        #     if intro.exec():
-        #         print("Юзер согласился")
+        self.engine = BoltEngine(MODEL, self.signals.text_ready.emit, self.overlay.set_rms, self.signals.status_changed.emit)
+        self.win = MainWindow(self.db, MODEL)
 
-        # 3. Движок
-        self.engine = BoltEngine(MODEL, self.signals.text_ready.emit, self.overlay.set_rms)
-        
-        # 4. Трей и иконки
-        self.tray = QSystemTrayIcon(self)
-        
+        self.signals.status_changed.connect(self.win.update_engine_status)
+
         icon_idle_path = os.path.join(BASE_DIR, "assets/icon_tray.png")
         icon_rec_path = os.path.join(BASE_DIR, "assets/icon_tray_rec.png")
         
@@ -70,32 +66,67 @@ class BoltApp(QApplication):
             self.icon_idle = self.style().standardIcon(QStyle.SP_ComputerIcon)
             self.icon_rec = self.style().standardIcon(QStyle.SP_MediaPlay)
 
-        self.setWindowIcon(self.icon_idle)
+        # 3. Трей и Док
+        self.tray = QSystemTrayIcon(self)
+        self.update_tray_menu()
         self.tray.setIcon(self.icon_idle)
-        
-        menu = QMenu()
-        menu.addAction("Дашборд", self.win.show)
-        menu.addAction("История", self.win.show)
-        menu.addAction("Выход", self.quit)
-        self.tray.setContextMenu(menu)
+        self.setWindowIcon(self.icon_idle)
         self.tray.show()
 
-        # 5. Хоткеи
+        # 4. Хоткеи
         self.kb_controller = keyboard.Controller()
         self.active_keys = set()
         self.shortcut_handled = False
-        
         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.listener.start()
+        
+        QTimer.singleShot(100, self.engine.load_model)
+    
+    def update_tray_menu(self):
+        menu = QMenu()
+        
+        # Секция версии
+        header = menu.addAction(f"Голосок v0.3.0")
+        header.setEnabled(False)
+        menu.addSeparator()
+        
+        # Последняя транскрипция
+        menu.addAction("Скопировать последнюю запись", self.copy_last)
+        menu.addSeparator()
+        
+        # Модели (Submenu)
+        model_menu = menu.addMenu(f"Модель: {MODEL.split('/')[-1]}")
+        for m in ["Whisper Turbo", "Whisper Small", "Whisper Large"]:
+            act = model_menu.addAction(m)
+            act.setCheckable(True)
+            act.setChecked(m.lower() in MODEL.lower())
+
+        menu.addAction("Выгрузить модель", self.engine.unload)
+        menu.addSeparator()
+
+        menu.addAction("Настройки...", self.win.show)
+        menu.addAction("Выход", self.quit)
+        self.tray.setContextMenu(menu)
+
+    def copy_last(self):
+        last = self.db.get_all_full()
+        if last: pyperclip.copy(last[0][0])
 
     def on_press(self, key):
         self.active_keys.add(key)
-        
         is_combo = all(k in self.active_keys for k in HOTKEY)
         
         if is_combo and not self.shortcut_handled:
+            if not self.engine.model_loaded:
+                if not getattr(self.engine, 'is_loading', False):
+                    print("Запуск модели...")
+                    self.engine.load_model()
+                else:
+                    os.system('afplay /System/Library/Sounds/Sosumi.aiff &')
+                    print("Трр.. тххх... трртрхх...")
+                return
+
             self.shortcut_handled = True
-            
             if not self.engine.is_recording:
                 self.signals.start_rec.emit()
             else:
@@ -106,6 +137,12 @@ class BoltApp(QApplication):
             self.shortcut_handled = False
         if key in self.active_keys:
             self.active_keys.remove(key)
+    
+    def event(self, event):
+        if event.type() == QEvent.ApplicationActivate:
+            self.win.show()
+            self.win.raise_()
+        return super().event(event)
 
     # --- ЭТИ ФУНКЦИИ РАБОТАЮТ СТРОГО В ГЛАВНОМ UI ПОТОКЕ ---
     def ui_start_rec(self):

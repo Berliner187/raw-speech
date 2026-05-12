@@ -345,9 +345,42 @@ class MainWindow(QMainWindow):
 
         self.side_l.addStretch()
         
-        m_badge = QLabel(model_name.split('/')[-1].upper())
-        m_badge.setStyleSheet("font-size: 9px; color: #8E8E93; font-weight: 800; padding-left: 15px;")
-        self.side_l.addWidget(m_badge)
+        self.model_status_box = QFrame()
+        self.model_status_box.setFixedHeight(80)
+        self.model_status_box.setStyleSheet("""
+            QFrame { 
+                background: white; border: 1px solid #E5E5E7; 
+                border-radius: 12px; margin: 5px;
+            }
+            QLabel { border: none; background: transparent; }
+        """)
+        footer_l = QVBoxLayout(self.model_status_box)
+        footer_l.setContentsMargins(10, 8, 10, 8)
+        footer_l.setSpacing(2)
+
+        h_status = QHBoxLayout()
+        self.status_dot = QLabel("●")
+        self.status_dot.setStyleSheet("color: #FF3B30; font-size: 14px;")
+        self.model_name_lbl = QLabel(self.model_name.split('/')[-1].upper())
+        self.model_name_lbl.setStyleSheet("font-size: 9px; font-weight: 800; color: #000;")
+        self.model_name_lbl.setWordWrap(True)
+        
+        h_status.addWidget(self.status_dot)
+        h_status.addWidget(self.model_name_lbl)
+        h_status.addStretch()
+        footer_l.addLayout(h_status)
+
+        # Прогресс-бар
+        self.load_progress = ProgressBar() 
+        self.load_progress.setFixedHeight(4)
+        self.load_progress.hide() 
+        footer_l.addWidget(self.load_progress)
+
+        self.ram_lbl = QLabel("RAM: -- MB")
+        self.ram_lbl.setStyleSheet("font-size: 9px; color: #8E8E93; font-weight: 600;")
+        footer_l.addWidget(self.ram_lbl)
+
+        self.side_l.addWidget(self.model_status_box)
 
         # --- СТЕК КОНТЕНТА ---
         self.stack = QStackedWidget()
@@ -361,6 +394,21 @@ class MainWindow(QMainWindow):
 
         self.switch_page(0)
         self.refresh()
+    
+    def update_engine_status(self, status, progress):
+        if status == "loading":
+            self.status_dot.setStyleSheet("color: #FF9500; font-size: 14px;")
+            self.model_name_lbl.setText("ЗАПУСКАЮСЬ...")
+            self.load_progress.show()
+            self.load_progress.set_value(progress / 100.0)
+        elif status == "ready":
+            self.status_dot.setStyleSheet("color: #34C759; font-size: 14px;")
+            self.model_name_lbl.setText(self.model_name.split('/')[-1].upper())
+            self.load_progress.hide()
+        elif status == "unloaded":
+            self.status_dot.setStyleSheet("color: #FF3B30; font-size: 14px;")
+            self.model_name_lbl.setText("ВЫКЛЮЧЕН")
+            self.load_progress.hide()
 
     def switch_page(self, idx):
         self.stack.setCurrentIndex(idx)
@@ -509,7 +557,12 @@ class MainWindow(QMainWindow):
         data = self.db.search(query) if query else self.db.get_all_full()
         for text, dt, al, pl in data:
             self.hist_layout.addWidget(HistoryItem(text, dt, al, pl, self))
-
+        try:
+            import psutil
+            process = psutil.Process(os.getpid())
+            mem_mb = process.memory_info().rss / 1024 / 1024
+            self.ram_lbl.setText(f"RAM: {int(mem_mb)} MB")
+        except: pass
     def delete_requested(self, text, dt):
         from ui import ConfirmDialog
         if ConfirmDialog(self).exec():
