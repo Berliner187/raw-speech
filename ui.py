@@ -169,27 +169,18 @@ class ModelCard(QFrame):
         self.update_btn_state()
         l.addWidget(self.btn)
 
-    def create_stat_bar(self, label, value):
-        w = QWidget()
-        wl = QVBoxLayout(w)
-        wl.setContentsMargins(0, 0, 0, 0); wl.setSpacing(4)
-        txt = QLabel(label)
-        txt.setStyleSheet("font-size: 9px; font-weight: 800; color: #8E8E93; border: none; background: transparent;")
-        bar = ProgressBar()
-        bar.setFixedHeight(6)
-        bar.set_value(value / 100.0)
-        wl.addWidget(txt); wl.addWidget(bar)
-        return w
-    
     def update_btn_state(self):
-        # Проверяем, активна ли модель сейчас
         is_active = (self.main_win.model_name == self.m_data['path'])
+        
+        engine_loaded = False
+        if hasattr(self.main_win, 'engine') and getattr(self.main_win, 'engine', None):
+            engine_loaded = self.main_win.engine.model_loaded
         
         if not self.m_data['downloaded']:
             self.btn.setText(f"СКАЧАТЬ ({self.m_data['size']})")
             self.btn.setEnabled(True)
             self.btn.setStyleSheet("QPushButton { background: #007AFF; color: white; border-radius: 10px; font-weight: 800; border: none; }")
-        elif is_active and self.main_win.engine.model_loaded:
+        elif is_active and engine_loaded:
             self.btn.setText("ИСПОЛЬЗУЕТСЯ")
             self.btn.setEnabled(False)
             self.btn.setStyleSheet("QPushButton { background: #F2F2F7; color: #8E8E93; border-radius: 10px; border: none; }")
@@ -205,8 +196,15 @@ class ModelCard(QFrame):
             self.btn.setEnabled(False)
         else:
             self.main_win.engine.unload()
-            self.main_win.model_name = self.m_data['path']
-            self.main_win.engine.load_model(self.m_data['path'])
+            
+            new_path = self.m_data['path']
+            self.main_win.model_name = new_path
+            
+            self.main_win.db.set_active_model(new_path)
+            
+            self.main_win.sys_model_lbl.setText(new_path.split('/')[-1].upper())
+            self.main_win.engine.load_model(new_path)
+            
             QTimer.singleShot(500, self.main_win.refresh_models)
 
     def create_stat_bar(self, label, value):
@@ -575,6 +573,18 @@ class MainWindow(QMainWindow):
 
     def setup_dash(self):
         page = QWidget(); l = QVBoxLayout(page); l.setContentsMargins(35, 35, 35, 35); l.setSpacing(25)
+        
+        h = QHBoxLayout()
+        sys_lbl = QLabel("На движке")
+        sys_lbl.setStyleSheet("font-size: 9px; font-weight: 800; color: #8E8E93;")
+        h.addWidget(sys_lbl)
+        
+        self.sys_model_lbl = QLabel(self.model_name.split('/')[-1].upper())
+        self.sys_model_lbl.setStyleSheet("background: #E5E5E7; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800;")
+        h.addWidget(self.sys_model_lbl)
+        h.addStretch()
+        l.addLayout(h)
+        
         grid = QGridLayout(); grid.setSpacing(12)
         self.m_hours = self.add_stat(grid, "ЧАСОВ СЭКОНОМЛЕНО", "0.0", 0, 0, 1, 3, True)
         self.m_speed = self.add_stat(grid, "МОЩНОСТЬ", "0.0x", 1, 0, 1, 1)
@@ -587,7 +597,6 @@ class MainWindow(QMainWindow):
         l.addWidget(QLabel("НЕДЕЛЬНЫЙ ТРЕНД", styleSheet="font-size: 10px; font-weight: 800; color: #8E8E93;"))
         self.bar_chart = BarChart(); l.addWidget(self.bar_chart)
         
-        # 5. МАНИФЕСТ
         manifest = QFrame()
         manifest.setFixedHeight(45); manifest.setStyleSheet("background: #000; border-radius: 12px;")
         ml = QHBoxLayout(manifest); ml.setContentsMargins(15, 0, 15, 0)

@@ -21,8 +21,8 @@ try:
 except ImportError:
     HAS_QUARTZ = False
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE_DIR, "models/whisper-turbo")
 HOTKEY = {keyboard.Key.alt, keyboard.Key.space}
 
 
@@ -42,20 +42,21 @@ class BoltApp(QApplication):
         super().__init__(argv)
         self.setQuitOnLastWindowClosed(False)
         
-        # 1. Сигналы
         self.signals = AppSignals()
         self.signals.start_rec.connect(self.ui_start_rec)
         self.signals.stop_rec.connect(self.ui_stop_rec)
         self.signals.text_ready.connect(self.ui_handle_text)
         
-        # 2. База и Окна
         self.db = DB()
+        
+        active_model = self.db.get_active_model()
+        print(f"Запуск с моделью: {active_model}")
+        
         self.overlay = CenterOverlay()
-        self.win = MainWindow(self.db, MODEL)
-        self.engine = BoltEngine(MODEL, self.signals.text_ready.emit, self.overlay.set_rms, self.signals.status_changed.emit)
+        self.win = MainWindow(self.db, active_model)
+        self.engine = BoltEngine(active_model, self.signals.text_ready.emit, self.overlay.set_rms, self.signals.status_changed.emit)
         
         self.win.engine = self.engine
-
         self.signals.status_changed.connect(self.win.update_engine_status)
 
         icon_idle_path = os.path.join(BASE_DIR, "assets/icon_tray.png")
@@ -88,7 +89,7 @@ class BoltApp(QApplication):
         menu = QMenu()
         
         # Секция версии
-        header = menu.addAction(f"Голосок v0.3.0")
+        header = menu.addAction(f"Голосок v0.5.0")
         header.setEnabled(False)
         menu.addSeparator()
         
@@ -97,11 +98,11 @@ class BoltApp(QApplication):
         menu.addSeparator()
         
         # Модели (Submenu)
-        model_menu = menu.addMenu(f"Модель: {MODEL.split('/')[-1]}")
-        for m in ["Whisper Turbo", "Whisper Small", "Whisper Large"]:
-            act = model_menu.addAction(m)
-            act.setCheckable(True)
-            act.setChecked(m.lower() in MODEL.lower())
+        # model_menu = menu.addMenu(f"Модель: {MODEL.split('/')[-1]}")
+        # for m in ["Whisper Turbo", "Whisper Small", "Whisper Large"]:
+        #     act = model_menu.addAction(m)
+        #     act.setCheckable(True)
+        #     act.setChecked(m.lower() in MODEL.lower())
 
         menu.addAction("Выгрузить модель", self.engine.unload)
         menu.addSeparator()

@@ -13,7 +13,19 @@ class DB:
             self.conn.execute("ALTER TABLE history ADD COLUMN proc_len REAL DEFAULT 0")
         except sqlite3.OperationalError:
             pass
+        
         self.conn.execute("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, text TEXT, dt DATETIME, audio_len REAL, proc_len REAL)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
+
+    def get_active_model(self):
+        row = self.conn.execute("SELECT value FROM settings WHERE key = 'active_model'").fetchone()
+        if row:
+            return row[0]
+        return os.path.expanduser("~/Library/Application Support/BoltAI/models/base")
+
+    def set_active_model(self, path):
+        self.conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('active_model', ?)", (path,))
+        self.conn.commit()
 
     def add(self, text, audio_len, proc_len):
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
