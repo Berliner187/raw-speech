@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QLabel, QDialo
                              QPushButton, QScrollArea, QLineEdit, QHBoxLayout, QFrame, QGridLayout, QStackedWidget)
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QRectF, QPointF
 from PySide6.QtGui import QPainter, QColor, QPainterPath, QPen, QFont
+from PySide6.QtCore import QSize
 import styles
 
 import os
@@ -227,132 +228,200 @@ class HistoryItem(QFrame):
     def __init__(self, text, dt, audio_len, proc_len, main_win):
         super().__init__()
         self.setObjectName("Card")
-        self.full_text, self.dt, self.main_win = text, dt, main_win
-        self.is_collapsed = True
+        self.full_text = text
+        self.dt = dt
+        self.main_win = main_win
+        self.is_expanded = False
         
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
-        self.setMinimumWidth(10)
         self.setStyleSheet("""
             QFrame#Card { 
-                background-color: #F2F2F7; 
+                background-color: #FFFFFF; 
                 border: 1px solid #E5E5E7; 
-                border-radius: 16px; 
-            }
-            QLabel { 
-                background-color: transparent; 
-                border: none; 
+                border-radius: 20px;
             }
         """)
         
-        main_l = QVBoxLayout(self)
-        main_l.setContentsMargins(20, 20, 20, 20)
-        main_l.setSpacing(12)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setSpacing(15)
 
-        h = QHBoxLayout()
-        time_lbl = QLabel()
-        date_lbl = QLabel()
+        header = QHBoxLayout()
+        try:
+            d_p, t_p = str(dt).split(' ')
+            time_lbl = QLabel(t_p[:5])
+            time_lbl.setStyleSheet("font-size: 16px; font-weight: 900; color: #1D1D1F; border: none; background: transparent;")
+            date_lbl = QLabel(d_p)
+            date_lbl.setStyleSheet("font-size: 11px; color: #8E8E93; font-weight: 600; border: none; background: transparent;")
+            header.addWidget(time_lbl)
+            header.addWidget(date_lbl)
+        except:
+            lbl = QLabel(str(dt))
+            lbl.setStyleSheet("font-size: 14px; font-weight: 800; color: #1D1D1F; border: none; background: transparent;")
+            header.addWidget(lbl)
         
-        time_lbl.setStyleSheet("color: #000; font-size: 14px; font-weight: 800; border:none; background: transparent;")
-        date_lbl.setStyleSheet("color: #8E8E93; font-size: 11px; font-weight: 500; border:none; background: transparent;")
-
-        if dt:
-            try:
-                if ' ' in str(dt):
-                    d_p, t_p = str(dt).split(' ')
-                    time_lbl.setText(t_p[:5])
-                    date_lbl.setText(d_p)
-                else:
-                    time_lbl.setText(str(dt))
-            except Exception as e:
-                print(f"Ошибка парсинга даты: {e}")
-                time_lbl.setText(str(dt))
-        else:
-            time_lbl.setText("--:--")
-
-        h.addWidget(time_lbl)
-        h.addWidget(date_lbl)
-        h.addStretch()
+        header.addStretch()
         
-        # Кнопка удаления
-        self.del_btn = QPushButton("✕")
-        self.del_btn.setFixedSize(24, 24)
+        self.del_btn = QPushButton()
+        self.del_btn.setFixedSize(32, 32)
         self.del_btn.setCursor(Qt.PointingHandCursor)
+        
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets/icon_delete.png")
+        if os.path.exists(icon_path):
+            self.del_btn.setIcon(QIcon(icon_path))
+            
         self.del_btn.setStyleSheet("""
-            QPushButton { color: #FF3B30; font-weight: 900; border: none; border-radius: 12px; background: transparent; }
-            QPushButton:hover { background: #FFE5E5; color: #FF3B30; }
+            QPushButton { 
+                background: #FFF0F0; border: none; border-radius: 10px; 
+            }
+            QPushButton:hover { background: #FF3B30; }
         """)
         self.del_btn.clicked.connect(lambda: self.main_win.delete_requested(self.full_text, self.dt))
-        
-        h.addWidget(self.del_btn)
-        main_l.addLayout(h)
+        header.addWidget(self.del_btn)
+        self.main_layout.addLayout(header)
 
         meta_h = QHBoxLayout()
-        meta_h.setSpacing(6)
-
-        # 1. Длина аудио (Синий)
-        dur = QLabel(f"● {audio_len:.1f} сек")
-        dur.setStyleSheet("color: #007AFF; font-size: 10px; font-weight: 700; background: #E5F1FF; padding: 3px 10px; border-radius: 8px;")
+        meta_h.setSpacing(8)
         
-        # 2. Стрелка
-        arrow = QLabel("→")
-        arrow.setStyleSheet("color: #8E8E93; font-size: 12px; font-weight: 400;")
-
-        # 3. Скорость обработки (Оранжевый)
-        proc = QLabel(f"{proc_len:.1f} сек")
-        proc.setStyleSheet("color: #FF9500; font-size: 10px; font-weight: 700; background: #FFF4E5; padding: 3px 10px; border-radius: 8px;")
-
-        # 4. Эффективность (Зеленый X)
         x_factor = int(audio_len / proc_len) if proc_len > 0 else 0
-        eff = QLabel(f"x{x_factor}")
-        eff.setStyleSheet("color: #34C759; font-size: 10px; font-weight: 800; background: #E8F5E9; padding: 3px 8px; border-radius: 8px;")
-
-        meta_h.addWidget(dur)
-        meta_h.addWidget(arrow)
-        meta_h.addWidget(proc)
-        meta_h.addWidget(eff)
+        tags_css = "font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; border: none;"
+        
+        dur_tag = QLabel(f"● {audio_len:.1f}s")
+        dur_tag.setStyleSheet(f"color: #007AFF; background: #E5F1FF; {tags_css}")
+        proc_tag = QLabel(f"→ {proc_len:.1f}s")
+        proc_tag.setStyleSheet(f"color: #FF9500; background: #FFF4E5; {tags_css}")
+        eff_tag = QLabel(f"x{x_factor}")
+        eff_tag.setStyleSheet(f"color: #34C759; background: #E8F5E9; {tags_css}")
+        
+        meta_h.addWidget(dur_tag); meta_h.addWidget(proc_tag); meta_h.addWidget(eff_tag)
         meta_h.addStretch()
-        main_l.addLayout(meta_h)
+        self.main_layout.addLayout(meta_h)
 
+        self.text_mask = QScrollArea()
+        self.text_mask.setFrameShape(QFrame.NoFrame)
+        self.text_mask.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.text_mask.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.text_mask.setWidgetResizable(True)
+        self.text_mask.setStyleSheet("background: transparent; border: none;")
+        
+        self.BASE_HEIGHT = 65
+        self.text_mask.setMinimumHeight(self.BASE_HEIGHT)
+        self.text_mask.setMaximumHeight(self.BASE_HEIGHT)
+        
+        self.scroll_content = QWidget()
+        self.scroll_content.setStyleSheet("background: transparent;")
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
+        
         self.content_lbl = QLabel(text)
         self.content_lbl.setWordWrap(True)
-        self.content_lbl.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
-        self.content_lbl.setStyleSheet("color: #1D1D1F; font-size: 14px; line-height: 1.5; border: none;")
-        self.content_lbl.setMaximumHeight(60)
-        main_l.addWidget(self.content_lbl)
+        self.content_lbl.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.content_lbl.setStyleSheet("font-size: 14px; line-height: 1.5; color: #1D1D1F; border: none;")
+        
+        # ВОТ ЭТИ ДВЕ СТРОЧКИ ДОБАВИТЬ:
+        self.content_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.content_lbl.setCursor(Qt.IBeamCursor) # Курсор как у текста
+        
+        self.scroll_layout.addWidget(self.content_lbl)
+        self.scroll_layout.addStretch()
+        
+        self.text_mask.setWidget(self.scroll_content)
+        self.main_layout.addWidget(self.text_mask)
 
-        f = QHBoxLayout()
-        self.c_btn = QPushButton("КОПИРОВАТЬ")
-        self.e_btn = QPushButton("РАЗВЕРНУТЬ")
+        footer = QHBoxLayout()
+        footer.setSpacing(10)
         
-        bs = "QPushButton { background: #F2F2F7; color: #007AFF; border-radius: 10px; padding: 10px 15px; font-size: 11px; font-weight: 800; border: none; }"
-        self.c_btn.setStyleSheet(bs); self.e_btn.setStyleSheet(bs)
-        self.c_btn.setCursor(Qt.PointingHandCursor); self.e_btn.setCursor(Qt.PointingHandCursor)
+        self.copy_btn = QPushButton("КОПИРОВАТЬ")
+        self.expand_btn = QPushButton("РАЗВЕРНУТЬ")
         
-        self.c_btn.clicked.connect(self.copy_it)
-        self.e_btn.clicked.connect(self.toggle_expand)
+        btn_s = """
+            QPushButton { 
+                background: #F2F2F7; color: #007AFF; border-radius: 10px; 
+                padding: 8px 16px; font-size: 11px; font-weight: 800; border: none;
+            }
+            QPushButton:hover { background: #E5E5E7; }
+        """
+        self.copy_btn.setStyleSheet(btn_s)
+        self.expand_btn.setStyleSheet(btn_s)
+        self.copy_btn.setCursor(Qt.PointingHandCursor)
+        self.expand_btn.setCursor(Qt.PointingHandCursor)
         
-        f.addWidget(self.c_btn); f.addStretch(); f.addWidget(self.e_btn)
-        main_l.addLayout(f)
-
-    def toggle_expand(self):
-        if self.is_collapsed:
-            self.content_lbl.setMaximumHeight(10000)
-            self.e_btn.setText("СВЕРНУТЬ")
+        self.copy_btn.clicked.connect(self.copy_it)
+        self.expand_btn.clicked.connect(self.toggle_animation)
+        
+        footer.addWidget(self.copy_btn)
+        footer.addWidget(self.expand_btn)
+        footer.addStretch()
+        
+        self.main_layout.addLayout(footer)
+        
+        self.expand_btn.hide()
+        QTimer.singleShot(50, self.check_text_length)
+    
+    def check_text_length(self):
+        actual_height = self.content_lbl.heightForWidth(self.content_lbl.width())
+        
+        if actual_height > self.BASE_HEIGHT:
+            self.expand_btn.show()
         else:
-            self.content_lbl.setMaximumHeight(60)
-            self.e_btn.setText("РАЗВЕРНУТЬ")
-        self.is_collapsed = not self.is_collapsed
+            self.expand_btn.hide()
 
     def copy_it(self):
         pyperclip.copy(self.full_text)
-        orig = self.c_btn.text()
-        self.c_btn.setText("✓ ГОТОВО")
-        self.c_btn.setStyleSheet("background: #34C759; color: white; border-radius: 10px; padding: 10px 15px; font-size: 11px; font-weight: 800;")
-        QTimer.singleShot(1000, lambda: self.reset_copy_btn(orig))
+        self.copy_btn.setText("✓ СКОПИРОВАНО")
+        self.copy_btn.setStyleSheet("""
+            QPushButton { 
+                background: #34C759; color: white; border-radius: 10px; 
+                padding: 8px 16px; font-size: 11px; font-weight: 800; border: none;
+            }
+        """)
+        QTimer.singleShot(1500, self.reset_copy_btn)
 
-    def reset_copy_btn(self, orig_text):
-        self.c_btn.setText(orig_text)
-        self.c_btn.setStyleSheet("background: #F2F2F7; color: #007AFF; border-radius: 10px; padding: 10px 15px; font-size: 11px; font-weight: 800;")
+    def reset_copy_btn(self):
+        self.copy_btn.setText("КОПИРОВАТЬ")
+        self.copy_btn.setStyleSheet("""
+            QPushButton { 
+                background: #F2F2F7; color: #007AFF; border-radius: 10px; 
+                padding: 8px 16px; font-size: 11px; font-weight: 800; border: none;
+            }
+            QPushButton:hover { background: #E5E5E7; }
+        """)
+
+    def toggle_animation(self):
+        self.is_expanded = not self.is_expanded
+        
+        target_height = min(self.content_lbl.sizeHint().height() + 5, 500)
+        
+        if target_height <= self.BASE_HEIGHT:
+            self.expand_btn.setText("РАЗВЕРНУТЬ" if not self.is_expanded else "СВЕРНУТЬ")
+            return
+
+        self.anim_max = QPropertyAnimation(self.text_mask, b"maximumHeight")
+        self.anim_min = QPropertyAnimation(self.text_mask, b"minimumHeight")
+        
+        duration = 250
+        easing = QEasingCurve.InOutQuad
+        
+        for anim in [self.anim_max, self.anim_min]:
+            anim.setDuration(duration)
+            anim.setEasingCurve(easing)
+        
+        if self.is_expanded:
+            self.anim_max.setStartValue(self.BASE_HEIGHT)
+            self.anim_max.setEndValue(target_height)
+            self.anim_min.setStartValue(self.BASE_HEIGHT)
+            self.anim_min.setEndValue(target_height)
+            self.expand_btn.setText("СВЕРНУТЬ")
+        else:
+            self.text_mask.verticalScrollBar().setValue(0) 
+            self.anim_max.setStartValue(self.text_mask.height())
+            self.anim_max.setEndValue(self.BASE_HEIGHT)
+            self.anim_min.setStartValue(self.text_mask.height())
+            self.anim_min.setEndValue(self.BASE_HEIGHT)
+            self.expand_btn.setText("РАЗВЕРНУТЬ")
+            
+        self.anim_max.start()
+        self.anim_min.start()
 
 
 # --- ГЛАВНОЕ ОКНО ---
