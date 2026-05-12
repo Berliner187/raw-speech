@@ -12,8 +12,15 @@ from ui import MainWindow, ConfirmDialog
 from engine import BoltEngine
 from overlay import CenterOverlay
 
+try:
+    from Quartz import (CGEventCreateKeyboardEvent, CGEventPost, kCGHIDEventTap, 
+                       CGEventSetFlags, kCGEventFlagMaskCommand)
+    HAS_QUARTZ = True
+except ImportError:
+    HAS_QUARTZ = False
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE_DIR, "models/whisper-turbo")
+MODEL = os.path.join(BASE_DIR, "models/whisper-medium-8bit")
 HOTKEY = {keyboard.Key.alt, keyboard.Key.space}
 
 
@@ -106,7 +113,6 @@ class BoltApp(QApplication):
         os.system('afplay /System/Library/Sounds/Tink.aiff &')
         self.setWindowIcon(self.icon_rec)
         self.tray.setIcon(self.icon_rec)
-        self.overlay.set_recording()
         self.engine.start()
 
     def ui_stop_rec(self):
@@ -129,9 +135,7 @@ class BoltApp(QApplication):
         pyperclip.copy(text)
         
         time.sleep(0.1) 
-        try:
-            from Quartz import (CGEventCreateKeyboardEvent, CGEventPost, kCGHIDEventTap, 
-                               CGEventSetFlags, kCGEventFlagMaskCommand)
+        if HAS_QUARTZ:
             v_key = 0x09
             event_down = CGEventCreateKeyboardEvent(None, v_key, True)
             CGEventSetFlags(event_down, kCGEventFlagMaskCommand)
@@ -139,7 +143,7 @@ class BoltApp(QApplication):
             CGEventSetFlags(event_up, kCGEventFlagMaskCommand)
             CGEventPost(kCGHIDEventTap, event_down)
             CGEventPost(kCGHIDEventTap, event_up)
-        except:
+        else:
             with self.kb_controller.pressed(keyboard.Key.cmd):
                 self.kb_controller.tap('v')
             

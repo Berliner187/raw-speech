@@ -1,26 +1,44 @@
 QSS = """
-QMainWindow { background-color: #FBFBFD; }
-QLineEdit { 
-    background: #F2F2F7; border: none; border-radius: 10px; 
-    padding: 10px 15px; font-size: 14px; margin: 10px 20px;
+QMainWindow { 
+    background-color: transparent; 
 }
-QScrollArea { border: none; background: transparent; }
-QWidget#Card { 
-    background: #FFFFFF; border: 1px solid #E5E5E7; border-radius: 16px; 
+
+/* Навигация как в Центре Управления */
+QWidget#NavBar {
+    background: rgba(230, 230, 230, 150);
+    border-radius: 12px;
 }
-QLabel#TextSnippet { color: #1D1D1F; font-size: 14px; line-height: 1.4; }
-QLabel#Date { color: #86868B; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-QPushButton#ActionBtn { 
-    background: #F2F2F7; border: none; border-radius: 8px; 
-    padding: 6px 12px; font-size: 11px; font-weight: 600; color: #007AFF;
-}
-QPushButton#ActionBtn:hover { background: #E5E5E7; }
 
 QPushButton#NavBtn {
-    background: transparent; border: none; color: #86868B;
-    font-size: 13px; font-weight: 700; padding: 10px;
+    background: transparent;
+    border: none;
+    color: #1D1D1F;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 8px;
 }
-QPushButton#NavBtn:hover { color: #000; }
 
-QLabel#StatValue { font-size: 54px; font-weight: 200; color: #000; }
+QPushButton#NavBtn:checked {
+    background: #FFFFFF;
+}
+
+/* Карточки-облака */
+QFrame#Card {
+    background: rgba(255, 255, 255, 180);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+}
+
+QLineEdit {
+    background: rgba(200, 200, 200, 100);
+    border-radius: 10px;
+    padding: 10px;
+    color: #000;
+}
+
+QScrollArea { border: none; background: transparent; }
+QWidget#ScrollContent { background: transparent; }
+
+QLabel { color: #1D1D1F; font-family: "SF Pro Display"; }
 """

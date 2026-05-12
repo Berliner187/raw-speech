@@ -31,7 +31,6 @@ class CenterOverlay(QWidget):
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_animation)
-        self.timer.start(16)
 
         # Тень
         self.shadow = QGraphicsDropShadowEffect(self)
@@ -58,14 +57,18 @@ class CenterOverlay(QWidget):
 
     def set_recording(self):
         self.state = 'recording'
+        self.timer.start(16)
         self.show()
 
     def set_processing(self):
         self.state = 'processing'
         self.smooth_rms = 0.0
+        self.timer.start(16)
+        self.show()
 
     def hide_overlay(self):
         self.state = 'hidden'
+        self.timer.stop()
         self.hide()
 
     def set_rms(self, rms): self.rms = rms
