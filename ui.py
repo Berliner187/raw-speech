@@ -195,17 +195,20 @@ class ModelCard(QFrame):
             self.btn.setText("СКАЧИВАНИЕ...")
             self.btn.setEnabled(False)
         else:
-            self.main_win.engine.unload()
+            self.btn.setText("ЗАПУСКАЕТСЯ...")
+            self.btn.setStyleSheet("QPushButton { background: #F0FF00; color: #000; border-radius: 10px; font-weight: 900; border: none; }")
             
-            new_path = self.m_data['path']
-            self.main_win.model_name = new_path
-            
-            self.main_win.db.set_active_model(new_path)
-            
-            self.main_win.sys_model_lbl.setText(new_path.split('/')[-1].upper())
-            self.main_win.engine.load_model(new_path)
-            
-            QTimer.singleShot(500, self.main_win.refresh_models)
+            QTimer.singleShot(300, self.actually_switch_model)
+
+    def actually_switch_model(self):
+        self.main_win.engine.unload()
+        new_path = self.m_data['path']
+        self.main_win.model_name = new_path
+        self.main_win.db.set_active_model(new_path)
+        self.main_win.sys_model_lbl.setText(self.m_data['name'].upper())
+        self.main_win.engine.load_model(new_path)
+        QTimer.singleShot(500, self.main_win.refresh_models)
+
 
     def create_stat_bar(self, label, value):
         w = QWidget()
@@ -575,7 +578,7 @@ class MainWindow(QMainWindow):
         page = QWidget(); l = QVBoxLayout(page); l.setContentsMargins(35, 35, 35, 35); l.setSpacing(25)
         
         h = QHBoxLayout()
-        sys_lbl = QLabel("На движке")
+        sys_lbl = QLabel("ИСПОЛЬЗУЕТСЯ")
         sys_lbl.setStyleSheet("font-size: 9px; font-weight: 800; color: #8E8E93;")
         h.addWidget(sys_lbl)
         

@@ -107,7 +107,11 @@ class BoltApp(QApplication):
         menu.addAction("Выгрузить модель", self.engine.unload)
         menu.addSeparator()
 
+        menu.addAction("Дашборд", self.win.show)
+        menu.addAction("История", self.win.show)
         menu.addAction("Настройки...", self.win.show)
+        
+        menu.addSeparator()
         menu.addAction("Выход", self.quit)
         self.tray.setContextMenu(menu)
 
