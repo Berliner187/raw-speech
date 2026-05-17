@@ -673,15 +673,59 @@ class MainWindow(QMainWindow):
         page = QWidget()
         l = QVBoxLayout(page)
         l.setContentsMargins(35, 40, 35, 35)
-        l.setSpacing(15)
         
-        l.addWidget(QLabel("НАСТРОЙКИ СИСТЕМЫ", styleSheet="font-weight: 800; font-size: 18px; color: #22241E; margin-bottom: 20px;"))
+        title = QLabel("УПРАВЛЕНИЕ")
+        title.setStyleSheet("font-weight: 900; font-size: 18px; color: #000; margin-bottom: 10px;")
+        l.addWidget(title)
         
-        # Тумблеры
-        l.addWidget(self.create_setting_row("Запускать при старте системы", True))
-        l.addWidget(self.create_setting_row("Уведомления о вставке текста", True))
-        l.addWidget(self.create_setting_row("Автоматическое удаление через 30 дней", False))
+        card = QFrame()
+        card.setStyleSheet("background: #FFFFFF; border: 1px solid #E5E5E7; border-radius: 24px;")
+        cl = QVBoxLayout(card)
+        cl.setContentsMargins(40, 40, 40, 40)
+        cl.setSpacing(30)
         
+        key_css = """
+            background: #FBFBFD; color: #000; border: 1px solid #D1D1D6; 
+            border-bottom: 3px solid #D1D1D6; border-radius: 8px; 
+            font-size: 14px; font-weight: 800; padding: 8px 15px;
+        """
+        
+        row1 = QVBoxLayout()
+        row1.setSpacing(10)
+        keys_h1 = QHBoxLayout()
+        k_opt = QLabel("⌥ Option"); k_opt.setStyleSheet(key_css)
+        k_plus = QLabel("+"); k_plus.setStyleSheet("font-size: 16px; font-weight: 700; color: #8E8E93;")
+        k_spc = QLabel("Space"); k_spc.setStyleSheet(key_css)
+        keys_h1.addWidget(k_opt); keys_h1.addWidget(k_plus); keys_h1.addWidget(k_spc)
+        keys_h1.addStretch()
+        
+        desc1 = QLabel("Зажать или нажать один раз для старта диктовки.\nПовторное нажатие мгновенно вставит текст.")
+        desc1.setStyleSheet("color: #8E8E93; font-size: 13px; font-weight: 500; line-height: 1.4;")
+        
+        row1.addLayout(keys_h1); row1.addWidget(desc1)
+        cl.addLayout(row1)
+        
+        # Разделитель
+        sep = QFrame()
+        sep.setFixedHeight(1)
+        sep.setStyleSheet("background: #E5E5E7; border: none;")
+        cl.addWidget(sep)
+        
+        # 2. ОТМЕНА
+        row2 = QVBoxLayout()
+        row2.setSpacing(10)
+        keys_h2 = QHBoxLayout()
+        k_esc = QLabel("Esc"); k_esc.setStyleSheet(key_css)
+        keys_h2.addWidget(k_esc)
+        keys_h2.addStretch()
+        
+        desc2 = QLabel("Прервать запись без сохранения и вставки текста.")
+        desc2.setStyleSheet("color: #8E8E93; font-size: 13px; font-weight: 500;")
+        
+        row2.addLayout(keys_h2); row2.addWidget(desc2)
+        cl.addLayout(row2)
+        
+        l.addWidget(card)
         l.addStretch()
         return page
 

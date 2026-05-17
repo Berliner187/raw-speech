@@ -21,6 +21,19 @@ class BoltEngine:
         self.fs = 16000
         self.is_loading = False
     
+    def cancel(self):
+        if not self.is_recording: return
+        self.is_recording = False
+        
+        try:
+            if hasattr(self, 'stream'):
+                self.stream.stop()
+                self.stream.close()
+        except: pass
+
+        self.recording = []
+        print("Запись отменена пользователем. Буфер очищен.")
+    
     def download_model(self, model_id, repo_id):
         target_dir = os.path.expanduser(f"~/Library/Application Support/BoltAI/models/{model_id}")
         

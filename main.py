@@ -35,6 +35,7 @@ class AppSignals(QObject):
     stop_rec = Signal()
     text_ready = Signal(str, float, float)
     status_changed = Signal(str, int)
+    cancel_rec = Signal()
 
 
 class BoltApp(QApplication):
@@ -46,6 +47,7 @@ class BoltApp(QApplication):
         self.signals.start_rec.connect(self.ui_start_rec)
         self.signals.stop_rec.connect(self.ui_stop_rec)
         self.signals.text_ready.connect(self.ui_handle_text)
+        self.signals.cancel_rec.connect(self.ui_cancel_rec)
         
         self.db = DB()
         
@@ -89,7 +91,7 @@ class BoltApp(QApplication):
     
     def update_tray_menu(self):
         menu = QMenu()
-        header = menu.addAction(f"Голосок v0.5.2")
+        header = menu.addAction(f"Голосок v0.6.0")
         header.setEnabled(False)
         menu.addSeparator()
         
@@ -139,16 +141,20 @@ class BoltApp(QApplication):
 
     def on_press(self, key):
         self.active_keys.add(key)
+        
+        if key == keyboard.Key.esc and self.engine.is_recording:
+            self.signals.cancel_rec.emit()
+            return
+
         is_combo = all(k in self.active_keys for k in HOTKEY)
         
         if is_combo and not self.shortcut_handled:
             if not self.engine.model_loaded:
                 if not getattr(self.engine, 'is_loading', False):
-                    print("Запуск модели...")
                     self.engine.load_model()
+                    print("Трр.. тххх... трртрхх...")
                 else:
                     os.system('afplay /System/Library/Sounds/Sosumi.aiff &')
-                    print("Трр.. тххх... трртрхх...")
                 return
 
             self.shortcut_handled = True
@@ -176,6 +182,12 @@ class BoltApp(QApplication):
         self.setWindowIcon(self.icon_rec)
         self.tray.setIcon(self.icon_rec)
         self.engine.start()
+    
+    def ui_cancel_rec(self):
+        os.system('afplay /System/Library/Sounds/Basso.aiff &')
+        self.set_app_icon('idle')
+        self.overlay.hide_overlay()
+        self.engine.cancel()
 
     def ui_stop_rec(self):
         os.system('afplay /System/Library/Sounds/Pop.aiff &')
