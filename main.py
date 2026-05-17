@@ -61,10 +61,12 @@ class BoltApp(QApplication):
 
         icon_idle_path = os.path.join(BASE_DIR, "assets/icon_tray.png")
         icon_rec_path = os.path.join(BASE_DIR, "assets/icon_tray_rec.png")
+        icon_off = os.path.join(BASE_DIR, "assets/icon_tray_off.png")
         
         if os.path.exists(icon_idle_path):
             self.icon_idle = QIcon(icon_idle_path)
             self.icon_rec = QIcon(icon_rec_path)
+            self.icon_off = QIcon(icon_off)
         else:
             self.icon_idle = self.style().standardIcon(QStyle.SP_ComputerIcon)
             self.icon_rec = self.style().standardIcon(QStyle.SP_MediaPlay)
@@ -87,13 +89,10 @@ class BoltApp(QApplication):
     
     def update_tray_menu(self):
         menu = QMenu()
-        
-        # Секция версии
-        header = menu.addAction(f"Голосок v0.5.0")
+        header = menu.addAction(f"Голосок v0.5.2")
         header.setEnabled(False)
         menu.addSeparator()
         
-        # Последняя транскрипция
         menu.addAction("Скопировать последнюю запись", self.copy_last)
         menu.addSeparator()
         
@@ -104,16 +103,35 @@ class BoltApp(QApplication):
         #     act.setCheckable(True)
         #     act.setChecked(m.lower() in MODEL.lower())
 
-        menu.addAction("Выгрузить модель", self.engine.unload)
-        menu.addSeparator()
-
-        menu.addAction("Дашборд", self.win.show)
-        menu.addAction("История", self.win.show)
-        menu.addAction("Настройки...", self.win.show)
+        # ТЕПЕРЬ ОТКРЫВАЮТ НУЖНЫЕ СТРАНИЦЫ
+        menu.addAction("Дашборд", lambda: self.show_page(0))
+        menu.addAction("История", lambda: self.show_page(1))
+        menu.addAction("Модели", lambda: self.show_page(2))
+        menu.addAction("Настройки...", lambda: self.show_page(3))
         
         menu.addSeparator()
+        menu.addAction("Выгрузить модель", self.engine.unload)
         menu.addAction("Выход", self.quit)
         self.tray.setContextMenu(menu)
+    
+    def show_page(self, idx):
+        self.win.switch_page(idx)
+        self.win.show()
+        self.win.raise_()
+
+    def set_app_icon(self, state):
+        icons = {
+            "idle": self.icon_idle,
+            "rec": self.icon_rec,
+            "off": self.icon_off
+        }
+        icon = icons.get(state, self.icon_idle)
+        
+        if icon.isNull():
+            icon = self.style().standardIcon(QStyle.SP_ComputerIcon)
+            
+        self.tray.setIcon(icon)
+        self.setWindowIcon(icon)
 
     def copy_last(self):
         last = self.db.get_all_full()

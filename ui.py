@@ -1,6 +1,6 @@
 import math
 import pyperclip
-from PySide6.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QLabel, QDialog, QSizePolicy,
+from PySide6.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QLabel, QDialog, QSizePolicy, QApplication,
                              QPushButton, QScrollArea, QLineEdit, QHBoxLayout, QFrame, QGridLayout, QStackedWidget)
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QRectF, QPointF
 from PySide6.QtGui import QPainter, QColor, QPainterPath, QPen, QFont
@@ -24,13 +24,13 @@ class ConfirmDialog(QDialog):
         f_layout.setSpacing(20)
 
         msg = QLabel("УДАЛИТЬ ЭТУ ЗАПИСЬ?")
-        msg.setStyleSheet("font-weight: 800; font-size: 16px; color: #000; border: none;")
+        msg.setStyleSheet("font-weight: 800; font-size: 16px; color: #22241E; border: none;")
         msg.setAlignment(Qt.AlignCenter)
         f_layout.addWidget(msg)
 
         btns = QHBoxLayout()
         self.no_btn = QPushButton("ОТМЕНА")
-        self.no_btn.setStyleSheet("QPushButton { background: #F2F2F7; color: #000; border-radius: 12px; padding: 12px; font-weight: 700; border: none; } QPushButton:hover { background: #E5E5E7; }")
+        self.no_btn.setStyleSheet("QPushButton { background: #F2F2F7; color: #22241E; border-radius: 12px; padding: 12px; font-weight: 700; border: none; } QPushButton:hover { background: #E5E5E7; }")
         self.yes_btn = QPushButton("УДАЛИТЬ")
         self.yes_btn.setStyleSheet("QPushButton { background: #FF3B30; color: white; border-radius: 12px; padding: 12px; font-weight: 700; border: none; } QPushButton:hover { background: #D32F2F; }")
         
@@ -107,7 +107,7 @@ class BarChart(QWidget):
             p.setPen(QColor("#8E8E93"))
             p.drawText(QRectF(bx - gap/2, h - 20, bw + gap, 20), Qt.AlignCenter, self.days[i])
             if i == self.hovered_idx:
-                p.setPen(QColor("#000"))
+                p.setPen(QColor("#22241E"))
                 p.drawText(QRectF(bx - 20, by - 25, bw + 40, 20), Qt.AlignCenter, str(int(val)))
 
 
@@ -144,7 +144,7 @@ class ModelCard(QFrame):
         # Header: Имя и Вес
         h = QHBoxLayout()
         name_lbl = QLabel(self.m_data['name'])
-        name_lbl.setStyleSheet("font-weight: 900; font-size: 16px; color: #000; border: none; background: transparent;")
+        name_lbl.setStyleSheet("font-weight: 900; font-size: 16px; color: #22241E; border: none; background: transparent;")
         
         size_lbl = QLabel(self.m_data['size'])
         size_lbl.setStyleSheet("color: #8E8E93; font-size: 10px; font-weight: 700; border: none; background: transparent;")
@@ -187,7 +187,7 @@ class ModelCard(QFrame):
         else:
             self.btn.setText("ВЫБРАТЬ")
             self.btn.setEnabled(True)
-            self.btn.setStyleSheet("QPushButton { background: #000; color: white; border-radius: 10px; font-weight: 800; border: none; }")
+            self.btn.setStyleSheet("QPushButton { background: #22241E; color: white; border-radius: 10px; font-weight: 800; border: none; }")
 
     def on_btn_clicked(self):
         if not self.m_data['downloaded']:
@@ -196,7 +196,7 @@ class ModelCard(QFrame):
             self.btn.setEnabled(False)
         else:
             self.btn.setText("ЗАПУСКАЕТСЯ...")
-            self.btn.setStyleSheet("QPushButton { background: #F0FF00; color: #000; border-radius: 10px; font-weight: 900; border: none; }")
+            self.btn.setStyleSheet("QPushButton { background: #F0FF00; color: #22241E; border-radius: 10px; font-weight: 900; border: none; }")
             
             QTimer.singleShot(300, self.actually_switch_model)
 
@@ -235,27 +235,21 @@ class HistoryItem(QFrame):
         self.is_expanded = False
         
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
-        self.setStyleSheet("""
-            QFrame#Card { 
-                background-color: #FFFFFF; 
-                border: 1px solid #E5E5E7; 
-                border-radius: 20px;
-            }
-        """)
+        self.setStyleSheet("QFrame#Card { background-color: #FFFFFF; border: 1px solid #E5E5E7; border-radius: 16px; }")
         
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(20, 20, 20, 20)
-        self.main_layout.setSpacing(15)
+        self.main_layout.setContentsMargins(18, 18, 18, 18)
+        self.main_layout.setSpacing(12)
 
+        # --- 1. HEADER ---
         header = QHBoxLayout()
         try:
             d_p, t_p = str(dt).split(' ')
             time_lbl = QLabel(t_p[:5])
             time_lbl.setStyleSheet("font-size: 16px; font-weight: 900; color: #1D1D1F; border: none; background: transparent;")
             date_lbl = QLabel(d_p)
-            date_lbl.setStyleSheet("font-size: 11px; color: #8E8E93; font-weight: 600; border: none; background: transparent;")
-            header.addWidget(time_lbl)
-            header.addWidget(date_lbl)
+            date_lbl.setStyleSheet("font-size: 11px; color: #8E8E93; font-weight: 600; border: none; background: transparent; margin-left: 5px;")
+            header.addWidget(time_lbl); header.addWidget(date_lbl)
         except:
             lbl = QLabel(str(dt))
             lbl.setStyleSheet("font-size: 14px; font-weight: 800; color: #1D1D1F; border: none; background: transparent;")
@@ -264,18 +258,19 @@ class HistoryItem(QFrame):
         header.addStretch()
         
         self.del_btn = QPushButton()
-        self.del_btn.setFixedSize(32, 32)
+        self.del_btn.setFixedSize(28, 28)
         self.del_btn.setCursor(Qt.PointingHandCursor)
         
         icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets/icon_delete.png")
         if os.path.exists(icon_path):
             self.del_btn.setIcon(QIcon(icon_path))
+            self.del_btn.setIconSize(QSize(16, 16))
+        else:
+            self.del_btn.setText("✕") 
             
         self.del_btn.setStyleSheet("""
-            QPushButton { 
-                background: #FFF0F0; border: none; border-radius: 10px; 
-            }
-            QPushButton:hover { background: #FF3B30; }
+            QPushButton { background: #FFF0F0; border: none; border-radius: 10px; color: #FF3B30; font-weight: 900; } 
+            QPushButton:hover { background: #FF3B30; color: white; }
         """)
         self.del_btn.clicked.connect(lambda: self.main_win.delete_requested(self.full_text, self.dt))
         header.addWidget(self.del_btn)
@@ -283,9 +278,8 @@ class HistoryItem(QFrame):
 
         meta_h = QHBoxLayout()
         meta_h.setSpacing(8)
-        
         x_factor = int(audio_len / proc_len) if proc_len > 0 else 0
-        tags_css = "font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; border: none;"
+        tags_css = "font-size: 10px; font-weight: 800; padding: 0px 10px; border-radius: 8px; border: none;"
         
         dur_tag = QLabel(f"● {audio_len:.1f}s")
         dur_tag.setStyleSheet(f"color: #007AFF; background: #E5F1FF; {tags_css}")
@@ -294,7 +288,11 @@ class HistoryItem(QFrame):
         eff_tag = QLabel(f"x{x_factor}")
         eff_tag.setStyleSheet(f"color: #34C759; background: #E8F5E9; {tags_css}")
         
-        meta_h.addWidget(dur_tag); meta_h.addWidget(proc_tag); meta_h.addWidget(eff_tag)
+        for tag in [dur_tag, proc_tag, eff_tag]:
+            tag.setFixedHeight(24)
+            tag.setAlignment(Qt.AlignCenter)
+            meta_h.addWidget(tag)
+            
         meta_h.addStretch()
         self.main_layout.addLayout(meta_h)
 
@@ -303,47 +301,38 @@ class HistoryItem(QFrame):
         self.text_mask.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.text_mask.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.text_mask.setWidgetResizable(True)
-        self.text_mask.setStyleSheet("background: transparent; border: none;")
+        self.text_mask.setStyleSheet("QScrollArea { background-color: #FFFFFF; border: none; }")
         
-        self.BASE_HEIGHT = 65
+        self.BASE_HEIGHT = 45
         self.text_mask.setMinimumHeight(self.BASE_HEIGHT)
         self.text_mask.setMaximumHeight(self.BASE_HEIGHT)
         
         self.scroll_content = QWidget()
-        self.scroll_content.setStyleSheet("background: transparent;")
+        self.scroll_content.setStyleSheet("background-color: #FFFFFF;")
         self.scroll_layout = QVBoxLayout(self.scroll_content)
         self.scroll_layout.setContentsMargins(0, 0, 0, 0)
         
         self.content_lbl = QLabel(text)
         self.content_lbl.setWordWrap(True)
-        self.content_lbl.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.content_lbl.setStyleSheet("font-size: 14px; line-height: 1.5; color: #1D1D1F; border: none;")
-        
-        # ВОТ ЭТИ ДВЕ СТРОЧКИ ДОБАВИТЬ:
         self.content_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.content_lbl.setCursor(Qt.IBeamCursor) # Курсор как у текста
+        self.content_lbl.setCursor(Qt.IBeamCursor)
+        self.content_lbl.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.content_lbl.setStyleSheet("font-size: 14px; line-height: 1.5; color: #1D1D1F; border: none; background: #FFFFFF;")
         
         self.scroll_layout.addWidget(self.content_lbl)
         self.scroll_layout.addStretch()
-        
         self.text_mask.setWidget(self.scroll_content)
         self.main_layout.addWidget(self.text_mask)
 
         footer = QHBoxLayout()
         footer.setSpacing(10)
-        
         self.copy_btn = QPushButton("КОПИРОВАТЬ")
         self.expand_btn = QPushButton("РАЗВЕРНУТЬ")
         
-        btn_s = """
-            QPushButton { 
-                background: #F2F2F7; color: #007AFF; border-radius: 10px; 
-                padding: 8px 16px; font-size: 11px; font-weight: 800; border: none;
-            }
-            QPushButton:hover { background: #E5E5E7; }
-        """
-        self.copy_btn.setStyleSheet(btn_s)
-        self.expand_btn.setStyleSheet(btn_s)
+        self.btn_style = "QPushButton { background: #F2F2F7; color: #007AFF; border-radius: 10px; padding: 8px 16px; font-size: 11px; font-weight: 800; border: none; } QPushButton:hover { background: #E5E5E7; }"
+        self.copy_btn.setStyleSheet(self.btn_style)
+        self.expand_btn.setStyleSheet(self.btn_style)
+        
         self.copy_btn.setCursor(Qt.PointingHandCursor)
         self.expand_btn.setCursor(Qt.PointingHandCursor)
         
@@ -353,59 +342,26 @@ class HistoryItem(QFrame):
         footer.addWidget(self.copy_btn)
         footer.addWidget(self.expand_btn)
         footer.addStretch()
-        
         self.main_layout.addLayout(footer)
-        
+
         self.expand_btn.hide()
-        QTimer.singleShot(50, self.check_text_length)
-    
+        QTimer.singleShot(10, self.check_text_length)
+
     def check_text_length(self):
-        actual_height = self.content_lbl.heightForWidth(self.content_lbl.width())
-        
-        if actual_height > self.BASE_HEIGHT:
+        if self.content_lbl.sizeHint().height() > self.BASE_HEIGHT:
             self.expand_btn.show()
-        else:
-            self.expand_btn.hide()
-
-    def copy_it(self):
-        pyperclip.copy(self.full_text)
-        self.copy_btn.setText("✓ СКОПИРОВАНО")
-        self.copy_btn.setStyleSheet("""
-            QPushButton { 
-                background: #34C759; color: white; border-radius: 10px; 
-                padding: 8px 16px; font-size: 11px; font-weight: 800; border: none;
-            }
-        """)
-        QTimer.singleShot(1500, self.reset_copy_btn)
-
-    def reset_copy_btn(self):
-        self.copy_btn.setText("КОПИРОВАТЬ")
-        self.copy_btn.setStyleSheet("""
-            QPushButton { 
-                background: #F2F2F7; color: #007AFF; border-radius: 10px; 
-                padding: 8px 16px; font-size: 11px; font-weight: 800; border: none;
-            }
-            QPushButton:hover { background: #E5E5E7; }
-        """)
 
     def toggle_animation(self):
         self.is_expanded = not self.is_expanded
         
-        target_height = min(self.content_lbl.sizeHint().height() + 5, 500)
+        target_height = min(self.content_lbl.sizeHint().height() + 5, 400)
         
-        if target_height <= self.BASE_HEIGHT:
-            self.expand_btn.setText("РАЗВЕРНУТЬ" if not self.is_expanded else "СВЕРНУТЬ")
-            return
-
         self.anim_max = QPropertyAnimation(self.text_mask, b"maximumHeight")
         self.anim_min = QPropertyAnimation(self.text_mask, b"minimumHeight")
         
-        duration = 250
-        easing = QEasingCurve.InOutQuad
-        
         for anim in [self.anim_max, self.anim_min]:
-            anim.setDuration(duration)
-            anim.setEasingCurve(easing)
+            anim.setDuration(250) # Плавные 250мс
+            anim.setEasingCurve(QEasingCurve.InOutQuad)
         
         if self.is_expanded:
             self.anim_max.setStartValue(self.BASE_HEIGHT)
@@ -423,6 +379,16 @@ class HistoryItem(QFrame):
             
         self.anim_max.start()
         self.anim_min.start()
+
+    def copy_it(self):
+        pyperclip.copy(self.full_text)
+        self.copy_btn.setText("✓ СКОПИРОВАНО")
+        self.copy_btn.setStyleSheet("QPushButton { background: #34C759; color: white; border-radius: 10px; padding: 8px 16px; font-size: 11px; font-weight: 800; border: none; }")
+        QTimer.singleShot(1500, self.reset_copy_btn)
+
+    def reset_copy_btn(self):
+        self.copy_btn.setText("КОПИРОВАТЬ")
+        self.copy_btn.setStyleSheet(self.btn_style)
 
 
 # --- ГЛАВНОЕ ОКНО ---
@@ -462,7 +428,7 @@ class MainWindow(QMainWindow):
         logo_icon.setPixmap(QIcon(self.icon_path).pixmap(24, 24))
         logo_icon.setStyleSheet("background: transparent; border: none;")
         logo_text = QLabel("ГОЛОСОК")
-        logo_text.setStyleSheet("font-size: 18px; font-weight: 900; color: #000; border: none;")
+        logo_text.setStyleSheet("font-size: 18px; font-weight: 900; color: #22241E; border: none;")
         logo_layout.addWidget(logo_icon)
         logo_layout.addWidget(logo_text)
         logo_layout.addStretch()
@@ -497,7 +463,7 @@ class MainWindow(QMainWindow):
         self.status_dot = QLabel("●")
         self.status_dot.setStyleSheet("color: #FF3B30; font-size: 14px;")
         self.model_name_lbl = QLabel(self.model_name.split('/')[-1].upper())
-        self.model_name_lbl.setStyleSheet("font-size: 9px; font-weight: 800; color: #000;")
+        self.model_name_lbl.setStyleSheet("font-size: 9px; font-weight: 800; color: #22241E;")
         self.model_name_lbl.setWordWrap(True)
         
         h_status.addWidget(self.status_dot)
@@ -529,6 +495,16 @@ class MainWindow(QMainWindow):
 
         self.switch_page(0)
         self.refresh()
+        
+        self.search_timer = QTimer()
+        self.search_timer.setSingleShot(True)
+        self.search_timer.timeout.connect(self.refresh)
+    
+    def on_search_text_changed(self):
+        self.search_timer.start(300)
+
+    def actually_do_search(self):
+        self.refresh()
     
     def refresh_models(self):
         while self.models_grid.count():
@@ -541,20 +517,31 @@ class MainWindow(QMainWindow):
             self.models_grid.addWidget(card, i // 2, i % 2)
     
     def update_engine_status(self, status, progress):
+        # Достаем главный объект приложения
+        main_app = QApplication.instance()
+        
         if status == "loading":
             self.status_dot.setStyleSheet("color: #FF9500; font-size: 14px;")
             self.model_name_lbl.setText("ЗАПУСКАЮСЬ...")
             self.load_progress.show()
             self.load_progress.set_value(progress / 100.0)
+            if hasattr(main_app, 'set_app_icon'):
+                main_app.set_app_icon('off')
+                
         elif status == "ready":
             self.status_dot.setStyleSheet("color: #34C759; font-size: 14px;")
             self.model_name_lbl.setText(self.model_name.split('/')[-1].upper())
             self.load_progress.hide()
+            if hasattr(main_app, 'set_app_icon'):
+                main_app.set_app_icon('idle')
             self.refresh_models()
-        elif status == "unloaded":
+            
+        elif status == "unloaded" or status == "error":
             self.status_dot.setStyleSheet("color: #FF3B30; font-size: 14px;")
-            self.model_name_lbl.setText("ВЫКЛЮЧЕН")
+            self.model_name_lbl.setText("ВЫКЛЮЧЕН" if status == "unloaded" else "ОШИБКА")
             self.load_progress.hide()
+            if hasattr(main_app, 'set_app_icon'):
+                main_app.set_app_icon('off')
 
     def switch_page(self, idx):
         self.stack.setCurrentIndex(idx)
@@ -563,8 +550,8 @@ class MainWindow(QMainWindow):
 
     def add_stat(self, grid, label, value, r, c, rs, cs, is_main=False):
         container = QFrame()
-        bg = "#000" if is_main else "white"
-        color = "#FFF" if is_main else "#000"
+        bg = "#22241E" if is_main else "white"
+        color = "#FFF" if is_main else "#22241E"
         container.setStyleSheet(f"background: {bg}; border-radius: 20px; border: 1px solid #E5E5E7;")
         l = QVBoxLayout(container)
         l.setContentsMargins(20, 20, 20, 20)
@@ -583,25 +570,26 @@ class MainWindow(QMainWindow):
         h.addWidget(sys_lbl)
         
         self.sys_model_lbl = QLabel(self.model_name.split('/')[-1].upper())
-        self.sys_model_lbl.setStyleSheet("background: #E5E5E7; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800;")
+        self.sys_model_lbl.setStyleSheet("background: #E5E5E7; color: #22241E; padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800;")
         h.addWidget(self.sys_model_lbl)
         h.addStretch()
         l.addLayout(h)
         
         grid = QGridLayout(); grid.setSpacing(12)
-        self.m_hours = self.add_stat(grid, "ЧАСОВ СЭКОНОМЛЕНО", "0.0", 0, 0, 1, 3, True)
-        self.m_speed = self.add_stat(grid, "МОЩНОСТЬ", "0.0x", 1, 0, 1, 1)
-        self.m_audio = self.add_stat(grid, "ВВОД (МИН)", "0.0", 1, 1, 1, 1)
-        self.m_words = self.add_stat(grid, "СЛОВ", "0", 1, 2, 1, 1)
-        self.m_count = self.add_stat(grid, "ЗАМЕТОК", "0", 2, 0, 1, 1)
-        self.m_avg   = self.add_stat(grid, "СР. ДЛИНА", "0", 2, 1, 1, 1)
-        self.m_intens = self.add_stat(grid, "В ДЕНЬ", "0.0", 2, 2, 1, 1)
+        self.m_hours = self.add_stat(grid, "ЧАСОВ ЖИЗНИ СЭКОНОМЛЕНО", "0.0", 0, 0, 1, 3, is_main=True)
+        self.m_speed = self.add_stat(grid, "МОЩНОСТЬ ИИ", "0.0x", 1, 0, 1, 1)
+        self.m_streak = self.add_stat(grid, "ДНЕЙ ПОДРЯД", "0", 1, 1, 1, 1)
+        self.m_wpm = self.add_stat(grid, "WPM (ТЕМП)", "0", 1, 2, 1, 1)
+        self.m_audio = self.add_stat(grid, "НАГОВОРИЛИ (МИН)", "0.0", 2, 0, 1, 1)
+        self.m_count = self.add_stat(grid, "ВСЕГО ЗАМЕТОК", "0", 2, 1, 1, 1)
+        self.m_avg = self.add_stat(grid, "СРЕДНЯЯ ДЛИНА (ЗН)", "0", 2, 2, 1, 1)
+        
         l.addLayout(grid)
         l.addWidget(QLabel("НЕДЕЛЬНЫЙ ТРЕНД", styleSheet="font-size: 10px; font-weight: 800; color: #8E8E93;"))
         self.bar_chart = BarChart(); l.addWidget(self.bar_chart)
         
         manifest = QFrame()
-        manifest.setFixedHeight(45); manifest.setStyleSheet("background: #000; border-radius: 12px;")
+        manifest.setFixedHeight(45); manifest.setStyleSheet("background: #22241E; border-radius: 12px;")
         ml = QHBoxLayout(manifest); ml.setContentsMargins(15, 0, 15, 0)
         mt = QLabel("ГОЛОСОК ™2026"); mt.setStyleSheet("color: #F0FF00; font-weight: 900; font-size: 10px;")
         ma = QLabel("Design by Kozak"); ma.setStyleSheet("color: #8E8E93; font-size: 9px; font-weight: 700;")
@@ -616,8 +604,9 @@ class MainWindow(QMainWindow):
         
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Поиск по мыслям...")
-        self.search_bar.setStyleSheet("background: #F2F2F7; border: none; border-radius: 12px; padding: 12px; font-size: 14px;")
-        self.search_bar.textChanged.connect(self.refresh)
+        self.search_bar.setStyleSheet("background: #FFFFFF; color: #22241E; border: none; border-radius: 12px; padding: 12px; font-size: 14px;")
+        self.search_bar.textChanged.connect(lambda: self.search_timer.start(300))
+        
         l.addWidget(self.search_bar)
         
         self.scroll = QScrollArea(); 
@@ -626,25 +615,32 @@ class MainWindow(QMainWindow):
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
         self.scroll.setStyleSheet("""
-            QScrollArea { background: transparent; border: none; }
-            QScrollBar:vertical {
-                border: none;
-                background: transparent;
-                width: 8px;
-                margin: 0px;
+            QScrollArea { 
+                background: transparent; 
+                border: none; 
             }
-            QScrollBar::handle:vertical {
-                background: #D1D1D6;
-                border-radius: 4px;
-                min-height: 20px;
+            QScrollBar:vertical { 
+                border: none; 
+                background: transparent; 
+                width: 8px; 
+                margin: 0px; 
             }
-            QScrollBar::handle:vertical:hover {
-                background: #8E8E93;
+            QScrollBar::handle:vertical { 
+                background: rgba(0, 0, 0, 0.15); 
+                border-radius: 4px; 
+                min-height: 30px; 
             }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
+            QScrollBar::handle:vertical:hover { 
+                background: rgba(0, 0, 0, 0.3); 
+            }
+            /* ТОТАЛЬНОЕ УНИЧТОЖЕНИЕ МАКОВСКИХ РАМОК И ФОНА СКРОЛЛА */
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { 
+                border: none; 
+                background: none; 
             }
         """)
+        self.scroll.viewport().setStyleSheet("background: #FBFBFD;") 
         
         self.scroll_content = QWidget(); self.hist_layout = QVBoxLayout(self.scroll_content)
         self.hist_layout.setAlignment(Qt.AlignTop); self.hist_layout.setSpacing(15)
@@ -657,7 +653,7 @@ class MainWindow(QMainWindow):
         l.setContentsMargins(35, 40, 35, 35)
         
         title = QLabel("ДОСТУПНЫЕ МОДЕЛИ")
-        title.setStyleSheet("font-weight: 800; font-size: 18px; color: #000; margin-bottom: 20px;")
+        title.setStyleSheet("font-weight: 800; font-size: 18px; color: #22241E; margin-bottom: 20px;")
         l.addWidget(title)
         
         self.models_grid_widget = QWidget()
@@ -679,7 +675,7 @@ class MainWindow(QMainWindow):
         l.setContentsMargins(35, 40, 35, 35)
         l.setSpacing(15)
         
-        l.addWidget(QLabel("НАСТРОЙКИ СИСТЕМЫ", styleSheet="font-weight: 800; font-size: 18px; color: #000; margin-bottom: 20px;"))
+        l.addWidget(QLabel("НАСТРОЙКИ СИСТЕМЫ", styleSheet="font-weight: 800; font-size: 18px; color: #22241E; margin-bottom: 20px;"))
         
         # Тумблеры
         l.addWidget(self.create_setting_row("Запускать при старте системы", True))
@@ -703,24 +699,45 @@ class MainWindow(QMainWindow):
 
     def refresh(self):
         s = self.db.get_stats()
-        self.m_hours.setText(str(s["hours"])); self.m_speed.setText(f"{s['speed_factor']}x")
-        self.m_audio.setText(str(s["total_audio_min"])); self.m_words.setText(str(s["words"]))
-        self.m_count.setText(str(s["count"])); self.m_avg.setText(str(s["avg_len"]))
-        self.m_intens.setText(str(s["intensity"]))
+        
+        self.m_hours.setText(str(s["hours"]))
+        self.m_speed.setText(f"{s['speed_factor']}x")
+        self.m_streak.setText(str(s["streak"]))
+        self.m_wpm.setText(str(s["wpm"]))
+        self.m_audio.setText(str(s["total_audio_min"]))
+        self.m_count.setText(str(s["count"]))
+        self.m_avg.setText(str(s["avg_len"]))
         self.bar_chart.set_data(self.db.get_weekly_activity())
+        
         while self.hist_layout.count():
             item = self.hist_layout.takeAt(0)
-            if item.widget(): item.widget().deleteLater()
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.spacerItem():
+                pass
+
         query = self.search_bar.text()
         data = self.db.search(query) if query else self.db.get_all_full()
-        for text, dt, al, pl in data:
-            self.hist_layout.addWidget(HistoryItem(text, dt, al, pl, self))
+        
+        # Заглушка или данные
+        if not data:
+            empty_lbl = QLabel("НИЧЕГО НЕ НАЙДЕНО")
+            empty_lbl.setStyleSheet("color: #8E8E93; font-size: 14px; font-weight: 800; margin-top: 50px;")
+            empty_lbl.setAlignment(Qt.AlignCenter)
+            self.hist_layout.addWidget(empty_lbl)
+        else:
+            for text, dt, al, pl in data:
+                self.hist_layout.addWidget(HistoryItem(text, dt, al, pl, self))
+        
+        self.hist_layout.addStretch(1)
+            
         try:
             import psutil
             process = psutil.Process(os.getpid())
             mem_mb = process.memory_info().rss / 1024 / 1024
             self.ram_lbl.setText(f"RAM: {int(mem_mb)} MB")
         except: pass
+
     def delete_requested(self, text, dt):
         from ui import ConfirmDialog
         if ConfirmDialog(self).exec():
